@@ -17,14 +17,30 @@ app.get("/", (c) => {
         endpoints: {
             "/": "API情報",
             "/stream/proxy?url=<youtube_url>": "プロキシストリーミング",
+            "/stream/direct?url=<youtube_url>": "音声ストリームURLへリダイレクト",
             "/stream-url?url=<youtube_url>": "音声ストリームURLをJSON形式で返す",
             "/version": "yt-dlpのバージョン情報",
         },
     });
 });
+app.get("/stream/direct", async (c) => {
+    const youtubeUrl = c.req.query("url");
+
+    if (!youtubeUrl) {
+        return c.json({ error: "URL parameter is required" }, 400);
+    }
+
+    try {
+        const audioUrl = await getAudioStreamUrl(youtubeUrl);
+        return c.redirect(audioUrl, 302);
+    } catch (error) {
+        console.error("Error:", error);
+        return c.json({ error: "Internal server error" }, 500);
+    }
+});
 
 // ============================================
-// /stream/proxy - プロキシストリーミング（シーク不可）
+// /stream/proxy - プロキシストリーミング
 // ============================================
 app.get("/stream/proxy", async (c) => {
     const youtubeUrl = c.req.query("url");
@@ -38,7 +54,6 @@ app.get("/stream/proxy", async (c) => {
         const command = new Deno.Command("yt-dlp", {
             args: [
                 "--no-check-certificates",
-                "--cookies", "/app/cookies.txt",
                 "--remote-components", "ejs:github",
                 "-f", "bestaudio/best",
                 "-o", "-",
@@ -137,7 +152,6 @@ async function getAudioStreamUrl(youtubeUrl: string): Promise<string> {
     const command = new Deno.Command("yt-dlp", {
         args: [
             "--no-check-certificates",
-            "--cookies", "/app/cookies.txt",
             "--remote-components", "ejs:github",
             "-f", "bestaudio/best",
             "--get-url",
@@ -166,9 +180,7 @@ const port = 3004;
 console.log(`🚀 Server is running on http://localhost:${port}`);
 console.log(`📝 Endpoints:`);
 console.log(`   GET /                      - API情報`);
-console.log(`   GET /stream?url=...        - 真のストリーミング（シーク可能）✅`);
-console.log(`   GET /stream/proxy?url=...  - プロキシストリーミング（シーク不可）`);
-console.log(`   GET /stream/direct?url=... - 直接リダイレ��ト`);
+console.log(`   GET /stream/proxy?url=...  - プロキシストリーミング`);
 console.log(`   GET /stream-url?url=...    - ストリームURL取得`);
 console.log(`   GET /version               - yt-dlpバージョン`);
 

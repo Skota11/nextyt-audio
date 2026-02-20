@@ -23,9 +23,6 @@ RUN chmod +x /usr/local/bin/yt-dlp
 # 作業ディレクトリを設定
 WORKDIR /app
 
-# Cookiesファイルをコピー
-# COPY cookies.txt /app/cookies.txt
-
 # アプリケーションファイルをコピー
 COPY main.ts /app/main.ts
 
