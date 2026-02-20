@@ -5,6 +5,8 @@ services:
     build: .
     ports:
       - "3004:3004"
+    env_file:
+      - .env
     environment:
       - PORT=3004
     restart: unless-stopped

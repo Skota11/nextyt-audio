@@ -7,6 +7,22 @@ const app = new Hono();
 // CORS設定
 app.use("/*", cors());
 
+// APIキー認証 ("/" は除外)
+app.use("*", async (c, next) => {
+    if (c.req.path === "/") {
+        return await next();
+    }
+
+    const apiKey = Deno.env.get("AccessKey");
+    const providedKey = c.req.header("x-api-key");
+
+    if (!apiKey || !providedKey || providedKey !== apiKey) {
+        return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    return await next();
+});
+
 // ============================================
 // ルート - API情報
 // ============================================
@@ -16,10 +32,10 @@ app.get("/", (c) => {
         message: "YouTube Audio Streaming API",
         endpoints: {
             "/": "API情報",
-            "/stream/proxy?url=<youtube_url>": "プロキシストリーミング",
-            "/stream/direct?url=<youtube_url>": "音声ストリームURLへリダイレクト",
-            "/stream-url?url=<youtube_url>": "音声ストリームURLをJSON形式で返す",
-            "/version": "yt-dlpのバージョン情報",
+            "/stream/proxy?url=<youtube_url>": "プロキシストリーミング (アクセスキーが必要)",
+            "/stream/direct?url=<youtube_url>": "音声ストリームURLへリダイレクト (アクセスキーが必要)",
+            "/stream-url?url=<youtube_url>": "音声ストリームURLをJSON形式で返す (アクセスキーが必要)",
+            "/version": "yt-dlpのバージョン情報 (アクセスキーが必要)",
         },
     });
 });
